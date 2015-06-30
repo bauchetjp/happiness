@@ -1,18 +1,21 @@
 CC=g++
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -std=c++0x
 LDFLAGS=-lopencv_core -lopencv_flann -L/usr/local/lib
 EXEC=main
 
 all: $(EXEC)
 
-main: main.o parser.o
+main: main.o parser.o arg.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 parser.o: parser.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-main.o: main.cpp parser.h
+arg.o: arg.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+main.o: main.cpp parser.h arg.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -rf $(EXEC) *~
+	rm -rf $(EXEC) *.o *.a *~
