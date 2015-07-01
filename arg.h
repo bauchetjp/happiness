@@ -8,29 +8,51 @@ using namespace std;
 enum ColorDistance {
 	RGB_DISTANCE,
 	LAB_DISTANCE
-} ;
+};
+
+
+enum MethodType {
+	QUILTING
+};
+
 
 typedef struct {
-	string sourceName;
-	string targetName;
-	int iterations;	
-	int radius;
- 	enum ColorDistance distance;
+	enum ColorDistance distance;
+	enum MethodType type;
+	union {
+		struct {
+			int quiltingIterations;
+			int quiltingRadius;
+		};
+	};
+	int trees;
+	int recursions;
 	bool automaticShading;
 	float alpha;
 	float beta;
 	float gamma;
-	int trees;
-	int recursions;
-} ReconstructionParams;
+} MethodParams;
 
 
-void setDefaultParameters (ReconstructionParams & params);
+typedef struct {
+	string sourceBasename;
+	string sourceNormalMapFilename;
+	string sourceAlbedoFilename;
+	string sourceShadingFilename;
+	string targetBasename;
+	string targetNormalMapFilename;
+	string targetShadingFilename;
+ 	enum ColorDistance distance;
+	MethodParams mparams;
+} GeneralParams;
+
+
+void setDefaultParameters (GeneralParams & gparams);
 
 void usage ();
 
-bool interpreter (int argc, char *argv[], ReconstructionParams & params);
+bool interpreter (int argc, char *argv[], GeneralParams & gparams);
 
-void printParameters (ReconstructionParams & params);
+void printParameters (GeneralParams & gparams);
 
 #endif

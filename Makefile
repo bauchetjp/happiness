@@ -5,7 +5,7 @@ EXEC=main
 
 all: $(EXEC)
 
-main: main.o parser.o arg.o
+main: main.o parser.o arg.o method.o quilting.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 parser.o: parser.cpp
@@ -14,7 +14,13 @@ parser.o: parser.cpp
 arg.o: arg.cpp
 	$(CC) -o $@ -c $< $(CFLAGS)
 
-main.o: main.cpp parser.h arg.h
+method.o: method.cpp arg.h
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+quilting.o: quilting.cpp
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+main.o: main.cpp parser.h arg.h method.h quilting.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
