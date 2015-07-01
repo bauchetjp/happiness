@@ -32,9 +32,10 @@ int main (int argc, char *argv[]) {
 						    	 targetNormalMap, targetShading,
 							     newAlbedo, newShading,
 								 params.mparams);
+		m->textureTransfer();
 		delete m;
 	}
-	printParameters (params);
+	// printParameters (params);
 }
 
 

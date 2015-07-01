@@ -67,7 +67,7 @@ bool interpreter (int argc, char *argv[], GeneralParams & params) {
 			params.sourceAlbedoFilename = params.sourceBasename;
 			params.sourceShadingFilename = params.sourceBasename;
 			params.sourceNormalMapFilename += "_n.txt";
-			params.sourceAlbedoFilename += "_a.txt";
+			params.sourceAlbedoFilename += "_r.txt";
 			params.sourceShadingFilename += "_s.txt";
 			r += 3;
 		} else if (!strcmp(argv[r], "--target") && (r + 2 < argc)) {

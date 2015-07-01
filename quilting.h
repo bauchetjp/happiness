@@ -1,7 +1,14 @@
 #ifndef _QUILTING_H_
 #define _QUILTING_H_
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <list>
+#include <utility>
 #include "method.h"
+
+using namespace cv;
+using namespace std;
 
 class Quilting : public Method
 {
@@ -20,9 +27,20 @@ public:
 	void textureTransfer ();
 
 protected:
-	void buildFeatures ();
+	int detectFeatures ();
+
+	void buildFeatures (int currentIteration);
 
 	void matchFeatures ();
+
+	int radius;
+	int overlap;
+	int entries;
+	int dimensionality;
+	float alpha;
+	float beta;
+	list<pair<int, int> > centers;
+	Mat features;
 };
 
 #endif
