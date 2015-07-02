@@ -18,7 +18,7 @@ public:
 			Mat & _newShading,
 			MethodParams & _params);
 
-	~Method ();
+	virtual ~Method ();
 	
 	virtual void textureTransfer () = 0;
 

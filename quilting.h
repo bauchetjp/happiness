@@ -31,7 +31,7 @@ protected:
 
 	void buildFeatures (int currentIteration);
 
-	void matchFeatures ();
+	void matchFeatures (int currentIteration);
 
 	int radius;
 	int overlap;
@@ -39,7 +39,7 @@ protected:
 	int dimensionality;
 	float alpha;
 	float beta;
-	list<pair<int, int> > centers;
+	list<Point2i> centers;
 	Mat features;
 };
 

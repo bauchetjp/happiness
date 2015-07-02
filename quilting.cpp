@@ -30,12 +30,13 @@ Quilting::Quilting (Mat & _sourceNormalMap,
 			_newShading,
 			_params)
 {
-	centers = std::list<std::pair<int, int> >();
+	centers = list<Point2i>();
 }
 
 
 Quilting::~Quilting() {
-
+	centers.clear();
+	features.release();
 }
 
 
@@ -54,8 +55,12 @@ void Quilting::textureTransfer () {
 		features.release();
 		entries = detectFeatures ();
 		cout << "Iteration " << i << ", features : " << entries << endl;
-		alpha = 0.9 - 0.8 * float(i) / (params.quiltingIterations - 1);
-		beta  = 1 - alpha;
+		if (params.quiltingIterations == 1) {
+			alpha = 0.9;
+		} else {
+			alpha = 0.9 - 0.8 * float(i) / (params.quiltingIterations - 1);
+		}
+		beta = 1 - alpha;
 		buildFeatures (i);
 	}
 }
@@ -68,7 +73,7 @@ int Quilting::detectFeatures () {
 			for (int y = max(0, i - radius) ; y <= min(sourceNormalMap.rows - 1, i + radius) && fullyTransparent ; y++) {
 				for (int x = max(0, j - radius) ; x <= min(sourceNormalMap.cols - 1, j + radius) && fullyTransparent ; x++) {
 					if (sourceNormalMap.at<Vec4f>(y, x)[3] > 0.9) {
-						centers.push_back(make_pair(i, j));
+						centers.push_back(Point2i(j, i));
 						fullyTransparent = false;
 					}
 				}
@@ -81,13 +86,13 @@ int Quilting::detectFeatures () {
 
 void Quilting::buildFeatures (int currentIteration) {
 	features.create(entries, dimensionality, CV_32F);
-	list<pair<int, int> >::iterator it;
+	list<Point2i>::iterator it;
 	int address = 0;
 	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
 	int shift_2 = 3 * overlap * (2 * radius + 1);
 	for (it = centers.begin() ; it != centers.end() ; it++) {
-		int i = it->first;
-		int j = it->second;
+		int i = it->y;
+		int j = it->x;
 		/* Copying the normal map in the feature */
 		for (int y = i - radius ; y <= i + radius ; y++) {
 			for (int x = j - radius ; x <= j + radius ; x++) {
@@ -159,6 +164,6 @@ void Quilting::buildFeatures (int currentIteration) {
 }
 
 
-void Quilting::matchFeatures () {
+void Quilting::matchFeatures (int currentIteration) {
 
 }

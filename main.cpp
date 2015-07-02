@@ -38,11 +38,3 @@ int main (int argc, char *argv[]) {
 	// printParameters (params);
 }
 
-
-/*string file = params.sourceName;
-		file += "_n.txt";
-		im = readfile (480, 640, file);
-		for (int i = 0 ; i < 4 ; i++) {
-			cout << im.at<Vec4f>(240, 320)[i] << " ";
-		}
-		cout << endl;*/
