@@ -13,6 +13,7 @@ using namespace std;
 int main (int argc, char *argv[]) {
 	GeneralParams params;
 	if (interpreter (argc, argv, params)) {
+		printParameters (params);
 		/* Creating a set of images */
 		Mat sourceNormalMap, sourceAlbedo, sourceShading;
 		Mat targetNormalMap, targetShading;
@@ -27,6 +28,15 @@ int main (int argc, char *argv[]) {
 		newAlbedo = Mat(480, 640, CV_32FC(4));
 		newShading = Mat(480, 640, CV_32FC(4));
 		newImage = Mat(480, 640, CV_32FC(4));
+		for (int i = 0 ; i < 480 ; i++) {
+			for (int j = 0 ; j < 640 ; j++) {
+				for (int k = 0 ; k < 4 ; k++) {
+					newAlbedo.at<Vec4f>(i, j)[k] = 0.0f;
+					newShading.at<Vec4f>(i, j)[k] = 0.0f;
+					newImage.at<Vec4f>(i, j)[k] = 0.0f;
+				}
+			}
+		}
 		/* Processing */
 		Method *m = new Quilting(sourceNormalMap, sourceAlbedo, sourceShading,
 						    	 targetNormalMap, targetShading,
@@ -35,6 +45,5 @@ int main (int argc, char *argv[]) {
 		m->textureTransfer();
 		delete m;
 	}
-	// printParameters (params);
 }
 

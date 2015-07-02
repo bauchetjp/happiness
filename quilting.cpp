@@ -1,6 +1,8 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
+#include <opencv2/flann/flann.hpp>
 #include <list>
+#include <vector>
 #include <utility>
 #include <iostream>
 #include "method.h"
@@ -54,7 +56,7 @@ void Quilting::textureTransfer () {
 		centers.clear();
 		features.release();
 		entries = detectFeatures ();
-		cout << "Iteration " << i << ", features : " << entries << endl;
+		cout << "Iteration " << i << ", features : " << entries << ", dimensionality : " << dimensionality << endl;
 		if (params.quiltingIterations == 1) {
 			alpha = 0.9;
 		} else {
@@ -62,6 +64,7 @@ void Quilting::textureTransfer () {
 		}
 		beta = 1 - alpha;
 		buildFeatures (i);
+		matchFeatures (i);
 	}
 }
 
@@ -165,5 +168,59 @@ void Quilting::buildFeatures (int currentIteration) {
 
 
 void Quilting::matchFeatures (int currentIteration) {
-
+	flann::KDTreeIndexParams kdIndexParams (params.trees);
+	flann::Index kdIndex (features, kdIndexParams);
+	int step = (currentIteration == 0 ? 2 * radius - overlap + 1 : radius + 1);
+	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
+	int shift_2 = 3 * overlap * (2 * radius + 1);
+	for (int i = radius ; i <= targetNormalMap.rows - 1 - radius ; i += step) {
+		for (int j = radius ; j <= targetNormalMap.cols - 1 - radius ; j += step) {
+			vector<int> kdCurrentIndex (1, -1);
+		    vector<float> kdCurrentDist (1, FLT_MAX);
+		    vector<float> query (dimensionality, 0.0f);
+			/* Filling in the query vector, first with the normals */
+			for (int y = max(0, i - radius) ; y <= min(targetNormalMap.rows - 1, i + radius) ; y++) {
+				for (int x = max(0, j - radius) ; x <= min(targetNormalMap.cols - 1, j + radius) ; x++) {
+					int yp = y - (i - radius);
+					int xp = x - (j - radius);
+					query[3 * (yp * ((radius << 1) + 1) + xp) + 0] = sqrt(alpha) * targetNormalMap.at<Vec4f>(y, x)[0];
+					query[3 * (yp * ((radius << 1) + 1) + xp) + 1] = sqrt(alpha) * targetNormalMap.at<Vec4f>(y, x)[1];
+					query[3 * (yp * ((radius << 1) + 1) + xp) + 2] = sqrt(alpha) * targetNormalMap.at<Vec4f>(y, x)[2];
+				}
+			}
+			/* Then with the colors */
+			if (currentIteration == 0) {
+				for (int y = max(0, i - radius) ; y <= min(targetNormalMap.rows - 1, i + radius) ; y++) {
+					for (int x = max(0, j - radius) ; x <= min(targetNormalMap.cols - 1, j + radius) ; x++) {
+						int yp = y - (i - radius);
+						int xp = x - (j - radius);
+						if (yp < overlap) {
+							query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 0] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[0];
+							query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 1] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[1];
+							query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 2] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[2];
+						} else if (xp < overlap) {
+							query[shift + shift_2 + 3 * ((yp - overlap) * overlap + xp) + 0] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[0];
+							query[shift + shift_2 + 3 * ((yp - overlap) * overlap + xp) + 1] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[1];
+							query[shift + shift_2 + 3 * ((yp - overlap) * overlap + xp) + 2] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[2];
+						}
+					}
+				}
+			} else {
+				for (int y = max(0, i - radius) ; y <= min(targetNormalMap.rows - 1, i + radius) ; y++) {
+					for (int x = max(0, j - radius) ; x <= min(targetNormalMap.cols - 1, j + radius) ; x++) {
+						int yp = y - (i - radius);
+						int xp = x - (j - radius);
+						query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 0] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[0];
+						query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 1] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[1];
+						query[shift + 3 * (yp * ((radius << 1) + 1) + xp) + 2] = sqrt(beta) * newAlbedo.at<Vec4f>(y, x)[2];
+					}
+				}
+			}
+			/* K-d tree search */
+			kdIndex.knnSearch (query, kdCurrentIndex, kdCurrentDist, 1, flann::SearchParams(params.recursions));
+			/* Paste */
+			// ...
+		}
+	}	
 }
+
