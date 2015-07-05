@@ -10,6 +10,14 @@
 using namespace cv;
 using namespace std;
 
+enum PasteMode {
+	NONE,
+	TOP,
+	LEFT,
+	CORNER,
+	ENTIRE
+};
+
 class Quilting : public Method
 {
 public:
@@ -32,6 +40,12 @@ protected:
 	void buildFeatures (int currentIteration);
 
 	void matchFeatures (int currentIteration);
+
+	void paste (int index, Point2i & center, enum PasteMode mode);
+
+	void verticalBoundaryCut (int index, Point2i & center, vector<int> & coords);
+
+	void horizontalBoundaryCut (int index, Point2i & center, vector<int> & coords);
 
 	int radius;
 	int overlap;

@@ -173,8 +173,10 @@ void Quilting::matchFeatures (int currentIteration) {
 	int step = (currentIteration == 0 ? 2 * radius - overlap + 1 : radius + 1);
 	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
 	int shift_2 = 3 * overlap * (2 * radius + 1);
+	int requests = 0;
 	for (int i = radius ; i <= targetNormalMap.rows - 1 - radius ; i += step) {
 		for (int j = radius ; j <= targetNormalMap.cols - 1 - radius ; j += step) {
+			requests++;
 			vector<int> kdCurrentIndex (1, -1);
 		    vector<float> kdCurrentDist (1, FLT_MAX);
 		    vector<float> query (dimensionality, 0.0f);
@@ -219,8 +221,142 @@ void Quilting::matchFeatures (int currentIteration) {
 			/* K-d tree search */
 			kdIndex.knnSearch (query, kdCurrentIndex, kdCurrentDist, 1, flann::SearchParams(params.recursions));
 			/* Paste */
-			// ...
+			Point2i center (j, i);
+			enum PasteMode mode;
+			if (currentIteration == 0) {
+				if (i == radius && j == radius) {
+					mode = NONE;
+				} else if (i == radius) {
+					mode = TOP;
+				} else if (j == radius) {
+					mode = LEFT;
+				} else {
+					mode = CORNER;
+				}
+			} else {
+				mode = ENTIRE;
+			}
+			paste (kdCurrentIndex[0], center, mode);			
 		}
 	}	
+	cout << requests << endl;
+}
+
+
+void Quilting::paste (int index, Point2i & center, enum PasteMode mode) {
+
+}
+
+
+void Quilting::horizontalBoundaryCut (int index, Point2i & center, vector<int> & coords) {
+	Mat e (overlap, 2 * radius + 1, CV_32F);
+	Mat E (overlap, 2 * radius + 1, CV_32F);
+	Mat selected (1, dimensionality, CV_32F);
+	features.row(index).copyTo(selected.row(0));
+	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
+	for (int q = 0 ; q < e.rows ; q++) {
+		for (int p = 0 ; p < e.cols ; p++) {
+			Vec3f u, v;
+			int y = clamp(0, center.y - radius + q, newAlbedo.rows - 1);
+			int x = clamp(0, center.x - radius + p, newAlbedo.cols - 1);
+			for (int d = 0 ; d < 3 ; d++) {
+				u[d] = newAlbedo.at<Vec4f>(y, x)[d];
+				v[d] = features.at<float>(0, shift + 3 * (q * (2 * radius + 1) + p) + d);
+			}
+			e.at<float>(q, p) = 0.0;
+			for (int d = 0 ; d < 3 ; d++) {
+				e.at<float>(q, p) = sqrt((u[d] - v[d]) * (u[d] - v[d]));
+			}
+		}
+	} 
+	for (int q = 0 ; q < e.rows ; q++) {
+		E.at<float>(q, 0) = e.at<float>(q, 0);
+	}
+	for (int p = 1 ; p < e.cols ; p++) {
+		for (int q = 0 ; q < e.rows ; q++) {
+			if (q == 0) {
+				E.at<float>(0, p) = e.at<float>(0, p) + min(E.at<float>(0, p - 1), E.at<float>(1, p - 1));
+			} else if (q == overlap - 1) {
+				E.at<float>(overlap - 1, p) = e.at<float>(overlap - 1, p) + min(E.at<float>(overlap - 2, p - 1), E.at<float>(overlap - 1, p - 1));
+			} else {
+				E.at<float>(q, p) = e.at<float>(q, p) + min(E.at<float>(q, p - 1), min(E.at<float>(q - 1, p - 1), E.at<float>(q + 1, p - 1)));
+			}
+		}
+	}
+	float columnMin = FLT_MAX;
+	for (int q = 0 ; q < e.rows ; q++) {
+		if (E.at<float>(q, e.cols - 1) < columnMin) {
+			coords[e.cols - 1] = q;
+			columnMin = E.at<float>(q, e.cols - 1);
+		}
+	}
+	for (int p = e.cols - 2 ; p >= 0 ; p--) {
+		float expectedMin = E.at<float>(coords[p + 1], p + 1) - e.at<float>(coords[p + 1], p + 1);
+		for (int q = max(0, coords[p + 1] - 1) ; q <= min(overlap - 1, coords[p + 1] + 1) ; q++) {
+			if (fabs(E.at<float>(q, p) - expectedMin) < 1e-5) {
+				coords[p] = q;
+				break;
+			}
+		}
+	}
+}
+
+
+void Quilting::verticalBoundaryCut (int index, Point2i & center, vector<int> & coords) {
+	Mat e (2 * radius + 1, overlap, CV_32F);
+	Mat E (2 * radius + 1, overlap, CV_32F);
+	Mat selected (1, dimensionality, CV_32F);
+	features.row(index).copyTo(selected.row(0));
+	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
+	int shift_2 = 3 * overlap * (2 * radius + 1);
+	for (int q = 0 ; q < e.rows ; q++) {
+		for (int p = 0 ; p < e.cols ; p++) {
+			Vec3f u, v;
+			int y = clamp(0, center.y - radius + q, newAlbedo.rows - 1);
+			int x = clamp(0, center.x - radius + p, newAlbedo.cols - 1);
+			for (int d = 0 ; d < 3 ; d++) {
+				u[d] = newAlbedo.at<Vec4f>(y, x)[d];
+				if (q < overlap) {
+					v[d] = features.at<float>(0, shift + 3 * (q * ((radius << 1) + 1) + p) + d);
+				} else {
+					v[d] = features.at<float>(0, shift + shift_2 + 3 * (((q - overlap) * overlap) + p) + d);
+				}
+			}
+			e.at<float>(q, p) = 0.0;
+			for (int d = 0 ; d < 3 ; d++) {
+				e.at<float>(q, p) = sqrt((u[d] - v[d]) * (u[d] - v[d]));
+			}
+		}
+	}
+	for (int p = 0 ; p < e.cols ; p++) {
+		E.at<float>(0, p) = e.at<float>(0, p);
+	}
+	for (int q = 1 ; q < e.rows ; q++) {
+		for (int p = 0 ; p < e.cols ; p++) {
+			if (p == 0) {
+				E.at<float>(q, 0) = e.at<float>(q, 0) + min(E.at<float>(q - 1, 0), E.at<float>(q - 1, 1));
+			} else if (p == e.cols - 1) {
+				E.at<float>(q, e.cols - 1) = e.at<float>(q, e.cols - 1) + min(E.at<float>(q - 1, e.cols - 2), E.at<float>(q - 1, e.cols - 1));
+			} else {
+				E.at<float>(q, p) = e.at<float>(q, p) + min(E.at<float>(q - 1, p), min(E.at<float>(q - 1, p - 1), E.at<float>(q - 1, p + 1)));
+			}
+		}
+	}
+	float rowMin = FLT_MAX;
+	for (int p = 0 ; p < e.cols ; p++) {
+		if (E.at<float>(e.rows - 1, p) < rowMin) {
+			coords[e.rows - 1] = p;
+			rowMin = E.at<float>(e.rows - 1, p);
+		}
+	}
+	for (int q = e.rows - 2 ; q >= 0 ; q--) {
+		float expectedMin = fabs(E.at<float>(q + 1, coords[q + 1]) - e.at<float>(q + 1, coords[q + 1]));
+		for (int p = max(0, coords[p + 1] - 1) ; p < min(e.rows - 1, coords[p + 1] + 1) ; p++) {
+			if (fabs(E.at<float>(q, p) - expectedMin) < 1e-5) {
+				coords[q] = p;
+				break;
+			}
+		}
+	}
 }
 

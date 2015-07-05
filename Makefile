@@ -24,4 +24,7 @@ main.o: main.cpp parser.h arg.h method.h quilting.h
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -rf $(EXEC) *.o *.a *~
+	rm -rf *.o *.a *~ 
+
+mrproper: clean
+	rm -rf $(EXEC) 
