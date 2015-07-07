@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
-#include <list>
+#include <deque>
 #include <utility>
 #include "method.h"
 
@@ -43,9 +43,9 @@ protected:
 
 	void paste (int index, Point2i & center, enum PasteMode mode);
 
-	void verticalBoundaryCut (int index, Point2i & center, vector<int> & coords);
+	void verticalBoundaryCut (int index, Point2i & target, vector<int> & coords);
 
-	void horizontalBoundaryCut (int index, Point2i & center, vector<int> & coords);
+	void horizontalBoundaryCut (int index, Point2i & target, vector<int> & coords);
 
 	int radius;
 	int overlap;
@@ -53,7 +53,7 @@ protected:
 	int dimensionality;
 	float alpha;
 	float beta;
-	list<Point2i> centers;
+	deque<Point2i> centers;
 	Mat features;
 };
 

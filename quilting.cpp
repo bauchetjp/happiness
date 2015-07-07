@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/flann/flann.hpp>
-#include <list>
+#include <deque>
 #include <vector>
 #include <utility>
 #include <iostream>
@@ -32,7 +32,7 @@ Quilting::Quilting (Mat & _sourceNormalMap,
 			_newShading,
 			_params)
 {
-	centers = list<Point2i>();
+	centers = deque<Point2i>();
 }
 
 
@@ -89,7 +89,7 @@ int Quilting::detectFeatures () {
 
 void Quilting::buildFeatures (int currentIteration) {
 	features.create(entries, dimensionality, CV_32F);
-	list<Point2i>::iterator it;
+	deque<Point2i>::iterator it;
 	int address = 0;
 	int shift = 3 * (2 * radius + 1) * (2 * radius + 1);
 	int shift_2 = 3 * overlap * (2 * radius + 1);
@@ -243,12 +243,83 @@ void Quilting::matchFeatures (int currentIteration) {
 }
 
 
-void Quilting::paste (int index, Point2i & center, enum PasteMode mode) {
-
+void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
+	Point2i source = centers[index];
+	if (mode == NONE) {
+		for (int i = -radius ; i <= radius ; i++) {
+			for (int j = -radius ; j <= radius ; j++) {
+				int t_i = clamp(0, target.y + i, targetNormalMap.rows - 1);
+				int t_j = clamp(0, target.x + j, targetNormalMap.cols - 1);
+				int s_i = clamp(0, source.y + i, sourceNormalMap.rows - 1);
+				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
+				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
+					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+				} else {
+					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+				}
+			}
+		}
+	} else if (mode == TOP) {
+		vector<int> coords (2 * radius + 1, -1);
+		horizontalBoundaryCut (index, target, coords);
+		for (int j = -radius ; j <= radius ; j++) {
+			for (int i = -radius + coords[radius + j] ; i <= radius ; i++) {
+				int t_i = clamp(0, target.y + i, targetNormalMap.rows - 1);
+				int t_j = clamp(0, target.x + j, targetNormalMap.cols - 1);
+				int s_i = clamp(0, source.y + i, sourceNormalMap.rows - 1);
+				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
+				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
+					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+				} else {
+					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+				}
+			}
+		}
+	} else if (mode == LEFT) {
+		vector<int> coords (2 * radius + 1, -1);
+		verticalBoundaryCut (index, target, coords);
+		for (int i = -radius ; i <= radius ; i++) {
+			for (int j = -radius + coords[radius + i] ; j <= radius ; j++) {
+				int t_i = clamp(0, target.y + i, targetNormalMap.rows - 1);
+				int t_j = clamp(0, target.x + j, targetNormalMap.cols - 1);
+				int s_i = clamp(0, source.y + i, sourceNormalMap.rows - 1);
+				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
+				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
+					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+				} else {
+					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+				}
+			}
+		}
+	} else if (mode == CORNER || mode == ENTIRE) {
+		vector<int> hcoords (2 * radius + 1, -1);
+		vector<int> vcoords (2 * radius + 1, -1);
+		horizontalBoundaryCut (index, target, hcoords);
+		verticalBoundaryCut (index, target, vcoords);
+		for (int i = -radius ; i <= radius ; i++) {
+			for (int j = -radius ; j <= radius ; j++) {
+				if (i + radius >= hcoords[j + radius] && j + radius >= vcoords[i + radius]) {
+					int t_i = clamp(0, target.y + i, targetNormalMap.rows - 1);
+					int t_j = clamp(0, target.x + j, targetNormalMap.cols - 1);
+					int s_i = clamp(0, source.y + i, sourceNormalMap.rows - 1);
+					int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
+					if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
+						newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
+						newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+					} else {
+						newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+					}
+				} 
+			}
+		}
+	}
 }
 
 
-void Quilting::horizontalBoundaryCut (int index, Point2i & center, vector<int> & coords) {
+void Quilting::horizontalBoundaryCut (int index, Point2i & target, vector<int> & coords) {
 	Mat e (overlap, 2 * radius + 1, CV_32F);
 	Mat E (overlap, 2 * radius + 1, CV_32F);
 	Mat selected (1, dimensionality, CV_32F);
@@ -257,8 +328,8 @@ void Quilting::horizontalBoundaryCut (int index, Point2i & center, vector<int> &
 	for (int q = 0 ; q < e.rows ; q++) {
 		for (int p = 0 ; p < e.cols ; p++) {
 			Vec3f u, v;
-			int y = clamp(0, center.y - radius + q, newAlbedo.rows - 1);
-			int x = clamp(0, center.x - radius + p, newAlbedo.cols - 1);
+			int y = clamp(0, target.y - radius + q, newAlbedo.rows - 1);
+			int x = clamp(0, target.x - radius + p, newAlbedo.cols - 1);
 			for (int d = 0 ; d < 3 ; d++) {
 				u[d] = newAlbedo.at<Vec4f>(y, x)[d];
 				v[d] = features.at<float>(0, shift + 3 * (q * (2 * radius + 1) + p) + d);
@@ -302,7 +373,7 @@ void Quilting::horizontalBoundaryCut (int index, Point2i & center, vector<int> &
 }
 
 
-void Quilting::verticalBoundaryCut (int index, Point2i & center, vector<int> & coords) {
+void Quilting::verticalBoundaryCut (int index, Point2i & target, vector<int> & coords) {
 	Mat e (2 * radius + 1, overlap, CV_32F);
 	Mat E (2 * radius + 1, overlap, CV_32F);
 	Mat selected (1, dimensionality, CV_32F);
@@ -312,8 +383,8 @@ void Quilting::verticalBoundaryCut (int index, Point2i & center, vector<int> & c
 	for (int q = 0 ; q < e.rows ; q++) {
 		for (int p = 0 ; p < e.cols ; p++) {
 			Vec3f u, v;
-			int y = clamp(0, center.y - radius + q, newAlbedo.rows - 1);
-			int x = clamp(0, center.x - radius + p, newAlbedo.cols - 1);
+			int y = clamp(0, target.y - radius + q, newAlbedo.rows - 1);
+			int x = clamp(0, target.x - radius + p, newAlbedo.cols - 1);
 			for (int d = 0 ; d < 3 ; d++) {
 				u[d] = newAlbedo.at<Vec4f>(y, x)[d];
 				if (q < overlap) {
