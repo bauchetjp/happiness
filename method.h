@@ -18,6 +18,8 @@ public:
 			Mat & _newShading,
 			MethodParams & _params);
 
+	void save ();
+
 	virtual ~Method ();
 	
 	virtual void textureTransfer () = 0;
@@ -31,6 +33,8 @@ protected:
 	Mat newAlbedo;
 	Mat newShading;
 	MethodParams params;
+
+	void _save (string filename, Mat m);
 };
 
 #endif

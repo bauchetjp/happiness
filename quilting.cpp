@@ -46,11 +46,13 @@ void Quilting::textureTransfer () {
 	for (int i = 0 ; i < params.quiltingIterations ; i++) {
 		if (i == 0) {
 			radius = params.quiltingRadius;
-			overlap = max(2, radius / 3);	
-			dimensionality = 3 * ((2 * radius + 1) * (2 * radius + 1) + 2 * overlap * (2 * radius + 1) - overlap * overlap);
 		} else {
 			radius = max(2, (2 * radius) / 3);
-			overlap = 0;
+		}
+		overlap = max(2, radius / 3);	
+		if (i == 0) {		
+			dimensionality = 3 * ((2 * radius + 1) * (2 * radius + 1) + 2 * overlap * (2 * radius + 1) - overlap * overlap);
+		} else {
 			dimensionality = 3 * (8 * radius * radius + 8 * radius + 2);
 		}
 		centers.clear();
@@ -175,6 +177,7 @@ void Quilting::matchFeatures (int currentIteration) {
 	int shift_2 = 3 * overlap * (2 * radius + 1);
 	int requests = 0;
 	for (int i = radius ; i <= targetNormalMap.rows - 1 - radius ; i += step) {
+		cout << currentIteration << " " << i << endl;
 		for (int j = radius ; j <= targetNormalMap.cols - 1 - radius ; j += step) {
 			requests++;
 			vector<int> kdCurrentIndex (1, -1);
@@ -227,9 +230,9 @@ void Quilting::matchFeatures (int currentIteration) {
 				if (i == radius && j == radius) {
 					mode = NONE;
 				} else if (i == radius) {
-					mode = TOP;
-				} else if (j == radius) {
 					mode = LEFT;
+				} else if (j == radius) {
+					mode = TOP;
 				} else {
 					mode = CORNER;
 				}
@@ -312,7 +315,7 @@ void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 					} else {
 						newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 					}
-				} 
+				}
 			}
 		}
 	}
@@ -422,7 +425,7 @@ void Quilting::verticalBoundaryCut (int index, Point2i & target, vector<int> & c
 	}
 	for (int q = e.rows - 2 ; q >= 0 ; q--) {
 		float expectedMin = fabs(E.at<float>(q + 1, coords[q + 1]) - e.at<float>(q + 1, coords[q + 1]));
-		for (int p = max(0, coords[p + 1] - 1) ; p < min(e.rows - 1, coords[p + 1] + 1) ; p++) {
+		for (int p = max(0, coords[q + 1] - 1) ; p < min(e.rows - 1, coords[q + 1] + 1) ; p++) {
 			if (fabs(E.at<float>(q, p) - expectedMin) < 1e-5) {
 				coords[q] = p;
 				break;

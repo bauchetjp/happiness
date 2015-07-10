@@ -23,7 +23,7 @@ int main (int argc, char *argv[]) {
 		sourceAlbedo    = readfile (480, 640, params.sourceAlbedoFilename);
 		sourceShading   = readfile (480, 640, params.sourceShadingFilename);
 		targetNormalMap = readfile (480, 640, params.targetNormalMapFilename);
-		targetNormalMap = readfile (480, 640, params.targetShadingFilename);
+		targetShading   = readfile (480, 640, params.targetShadingFilename);
 		/* Initializing the other images */
 		newAlbedo = Mat(480, 640, CV_32FC(4));
 		newShading = Mat(480, 640, CV_32FC(4));
@@ -43,6 +43,7 @@ int main (int argc, char *argv[]) {
 							     newAlbedo, newShading,
 								 params.mparams);
 		m->textureTransfer();
+		m->save();
 		delete m;
 	}
 }
