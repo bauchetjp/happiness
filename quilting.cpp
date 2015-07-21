@@ -5,6 +5,8 @@
 #include <vector>
 #include <utility>
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
 #include "method.h"
 #include "quilting.h"
 
@@ -22,6 +24,7 @@ Quilting::Quilting (Mat & _sourceNormalMap,
 		   			Mat & _targetShading,
 		   			Mat & _newAlbedo,
 		   			Mat & _newShading,
+					Mat & _newImage,
 					MethodParams & _params) :
 	Method (_sourceNormalMap,
 			_sourceAlbedo,
@@ -30,9 +33,20 @@ Quilting::Quilting (Mat & _sourceNormalMap,
 			_targetShading,
 			_newAlbedo,
 			_newShading,
+			_newImage,
 			_params)
 {
 	centers = deque<Point2i>();
+	srand(time(NULL));
+	diagram = Mat (480, 640, CV_32FC(4));
+	for (int i = 0 ; i < diagram.rows ; i++) {
+		for (int j = 0 ; j < diagram.cols ; j++) {
+			for (int d = 0 ; d < 3 ; d++) {
+				diagram.at<Vec4f>(i, j)[d] = 0.0f;
+			}
+			diagram.at<Vec4f>(i, j)[3] = 0.0f;
+		}
+	}
 }
 
 
@@ -243,11 +257,15 @@ void Quilting::matchFeatures (int currentIteration) {
 		}
 	}	
 	cout << requests << endl;
+	_save("./diagram.png", diagram);
 }
 
 
 void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 	Point2i source = centers[index];
+	float blue = (rand() % 255) / 255.0;
+	float green = (rand() % 255) / 255.0;
+	float red = (rand() % 255) / 255.0;
 	if (mode == NONE) {
 		for (int i = -radius ; i <= radius ; i++) {
 			for (int j = -radius ; j <= radius ; j++) {
@@ -257,7 +275,11 @@ void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
 				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
 					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
-					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;
+					diagram.at<Vec4f>(t_i, t_j)[0] = red;
+					diagram.at<Vec4f>(t_i, t_j)[1] = green;
+					diagram.at<Vec4f>(t_i, t_j)[2] = blue;
+					diagram.at<Vec4f>(t_i, t_j)[3] = 1.0f;
 				} else {
 					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 				}
@@ -274,7 +296,11 @@ void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
 				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
 					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
-					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;
+					diagram.at<Vec4f>(t_i, t_j)[0] = red;
+					diagram.at<Vec4f>(t_i, t_j)[1] = green;
+					diagram.at<Vec4f>(t_i, t_j)[2] = blue;
+					diagram.at<Vec4f>(t_i, t_j)[3] = 1.0f;
 				} else {
 					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 				}
@@ -291,7 +317,11 @@ void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 				int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
 				if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
 					newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
-					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+					newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;
+					diagram.at<Vec4f>(t_i, t_j)[0] = red;
+					diagram.at<Vec4f>(t_i, t_j)[1] = green;
+					diagram.at<Vec4f>(t_i, t_j)[2] = blue;
+					diagram.at<Vec4f>(t_i, t_j)[3] = 1.0f;		
 				} else {
 					newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 				}
@@ -311,7 +341,11 @@ void Quilting::paste (int index, Point2i & target, enum PasteMode mode) {
 					int s_j = clamp(0, source.x + j, sourceNormalMap.cols - 1);
 					if (targetNormalMap.at<Vec4f>(t_i, t_j)[3] > 0.9f) {
 						newAlbedo.at<Vec4f>(t_i, t_j) = sourceAlbedo.at<Vec4f>(s_i, s_j);
-						newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;	
+						newAlbedo.at<Vec4f>(t_i, t_j)[3] = 1.0f;
+						diagram.at<Vec4f>(t_i, t_j)[0] = red;
+						diagram.at<Vec4f>(t_i, t_j)[1] = green;
+						diagram.at<Vec4f>(t_i, t_j)[2] = blue;
+						diagram.at<Vec4f>(t_i, t_j)[3] = 1.0f;
 					} else {
 						newAlbedo.at<Vec4f>(t_i, t_j) = Vec4f(0.0f, 0.0f, 0.0f, 0.0f);
 					}

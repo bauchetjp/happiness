@@ -26,6 +26,7 @@ void setDefaultParameters (GeneralParams & gparams) {
 	gparams.mparams.gamma = 1.0f;
 	gparams.mparams.trees = 16;
 	gparams.mparams.recursions = 1024;
+	gparams.mparams.prefix = "";
 }
 
 
@@ -46,19 +47,28 @@ void usage () {
 bool interpreter (int argc, char *argv[], GeneralParams & params) {
 	setDefaultParameters (params);
 	int r = 1;
+	string sourceObjectName = "";
+	string sourceDirection = "";
+	string targetObjectName = "";
+	string targetDirection = "";
 	while (r < argc) {
 		if (!strcmp(argv[r], "--source") && (r + 2 < argc)) {
 			params.sourceBasename = "./images/";
 			params.sourceBasename += argv[r + 1];
+			sourceObjectName = argv[r + 1];
 			params.sourceBasename += "_";
 			if (!strcmp(argv[r + 2], "AMBIENT")) {
 				params.sourceBasename += "ambient";
+				sourceDirection = "ambient";
 			} else if (!strcmp(argv[r + 2], "WEST")) {
 				params.sourceBasename += "west";
+				sourceDirection = "west";
 			} else if (!strcmp(argv[r + 2], "EAST")) {
 				params.sourceBasename += "east";
+				sourceDirection = "east";
 			} else if (!strcmp(argv[r + 2], "FRONT")) {
 				params.sourceBasename += "front";
+				sourceDirection = "front";
 			} else {
 				usage();
 				return false;
@@ -73,15 +83,20 @@ bool interpreter (int argc, char *argv[], GeneralParams & params) {
 		} else if (!strcmp(argv[r], "--target") && (r + 2 < argc)) {
 			params.targetBasename = "./images/";
 			params.targetBasename += argv[r + 1];
+			targetObjectName = argv[r + 1];
 			params.targetBasename += "_";
 			if (!strcmp(argv[r + 2], "AMBIENT")) {
 				params.targetBasename += "ambient";
+				targetDirection = "ambient";
 			} else if (!strcmp(argv[r + 2], "WEST")) {
 				params.targetBasename += "west";
+				targetDirection = "west";
 			} else if (!strcmp(argv[r + 2], "EAST")) {
 				params.targetBasename += "east";
+				targetDirection = "east";
 			} else if (!strcmp(argv[r + 2], "FRONT")) {
 				params.targetBasename += "front";
+				targetDirection = "front";
 			} else {
 				usage();
 				return false;
@@ -137,6 +152,10 @@ bool interpreter (int argc, char *argv[], GeneralParams & params) {
 			return false;
 		}
 	}
+	params.mparams.prefix = sourceObjectName;
+	params.mparams.prefix += "_"; params.mparams.prefix += sourceDirection;
+	params.mparams.prefix += "_"; params.mparams.prefix += targetObjectName;
+	params.mparams.prefix += "_"; params.mparams.prefix += targetDirection;
 	return true;
 }
 

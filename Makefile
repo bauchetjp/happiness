@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-Wall -g -std=c++0x
-LDFLAGS=-lopencv_core -lopencv_flann -lopencv_highgui -L/usr/local/lib
+LDFLAGS=-lopencv_core -lopencv_flann -lopencv_highgui -lopencv_imgproc -L/usr/local/lib
 EXEC=main
 
 all: $(EXEC)

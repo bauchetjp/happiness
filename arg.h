@@ -31,6 +31,7 @@ typedef struct {
 	float alpha;
 	float beta;
 	float gamma;
+	string prefix;
 } MethodParams;
 
 

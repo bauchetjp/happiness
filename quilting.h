@@ -28,6 +28,7 @@ public:
 			  Mat & _targetShading,
 			  Mat & _newAlbedo,
 			  Mat & _newShading,
+			  Mat & _newImage,
 			  MethodParams & _params);
 
 	~Quilting ();
@@ -55,6 +56,8 @@ protected:
 	float beta;
 	deque<Point2i> centers;
 	Mat features;
+
+	Mat diagram;
 };
 
 #endif
