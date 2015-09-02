@@ -91,18 +91,18 @@ void Method::shadingTransfer() {
 }
 
 
-void Method::updateParameters (Mat & frame, vector<float> & stats) {
+void Method::updateParameters (Mat & frame, vector<double> & stats) {
 	stats.clear();
 	int n = 0;
-    float min = FLT_MAX;
-    float max = -FLT_MAX;
-    float mean = 0;
-    float sd = 0;
-    float skew = 0;
+    double min = FLT_MAX;
+    double max = -FLT_MAX;
+    double mean = 0;
+    double sd = 0;
+    double skew = 0;
     for (int y = 0 ; y < frame.rows ; y++) {
         for (int x = 0 ; x < frame.cols ; x++) {
             if (frame.at<Vec4f>(y, x)[3] > 1.0e-6) {
-				float r = frame.at<Vec4f>(y, x)[0];
+				double r = frame.at<Vec4f>(y, x)[0];
                 mean += r;
                 if (r > max) {
                     max = r;
@@ -117,7 +117,7 @@ void Method::updateParameters (Mat & frame, vector<float> & stats) {
     for (int y = 0 ; y < frame.rows ; y++) {
         for (int x = 0 ; x < frame.cols ; x++) {
             if (frame.at<Vec4f>(y, x)[3] > 1.0e-6) {
-                float r = frame.at<Vec4f>(y, x)[0];
+                double r = frame.at<Vec4f>(y, x)[0];
                 sd += (r - mean) * (r - mean);
             }
         }
@@ -127,13 +127,13 @@ void Method::updateParameters (Mat & frame, vector<float> & stats) {
     for (int y = 0 ; y < frame.rows ; y++) {
         for (int x = 0 ; x < frame.cols ; x++) {
             if (frame.at<Vec4f>(y, x)[3] > 1.0e-6) {
-                float r = frame.at<Vec4f>(y, x)[0];
+                double r = frame.at<Vec4f>(y, x)[0];
                 skew += pow((r - mean) / sd, 3.0);
             }
         }
     }
-    skew /= float(n);
-    stats.push_back(float(n));    // 0 : Realizations
+    skew /= n;
+    stats.push_back(double(n));    // 0 : Realizations
     stats.push_back(mean);        // 1 : Mean
     stats.push_back(sd);          // 2 : Standard deviation
     stats.push_back(skew);        // 3 : Skewness
@@ -310,6 +310,34 @@ void Method::context(FILE* logFile) {
 }
 
 
+/*
+void Method::generateOptimalShadingsPos(float slope, float absStep, float expMin, float expStep, float expMax, string prefix) {
+	int expItMax = int(fabs(expMax - expMin) / expStep) - 1;
+	int expArg = 0;
+	int absIterations = int(2.0 / absStep);
+	for (int absIt = 0 ; absIt < absIterations ; absIt++) {
+		float abs = -1.0 + absIt * absStep;
+		int expIt = expArg;
+		float expCur  = expMin + expIt * expStep;
+		float expNext = expMin + (expIt + 1) * expStep;
+		nonLinearHistogramRemapping (slope, abs, expNext);
+		while (stats_shading_n[3] <= stats_shading_s[3] && expIt < expItMax) {
+			expIt++;
+			expCur  = expMin + expIt * expStep;
+			expNext = expMin + (expIt + 1) * expStep;
+			nonLinearHistogramRemapping (slope, abs, expNext);
+		}
+		float upperBoundaryDist = fabs(stats_shading_s[3] - stats_shading_n[3]);
+		nonLinearHistogramRemapping (slope, abs, expCur);
+		float lowerBoundaryDist = fabs(stats_shading_s[3] - stats_shading_n[3]);
+		float expRes = (lowerBoundaryDist < upperBoundaryDist ? expCur : expNext);
+		expArg = expIt;
+		cout << absIt << " " << expRes << " " << fabs(angle_saturation_s - angle_saturation_n) << endl;
+	}
+}
+*/
+
+
 void Method::generateOptimalShadingsPos(float slope, float absStep, float expMin, float expStep, float expMax, string prefix) {
 	int expItMax = int(fabs(expMax - expMin) / expStep) - 1;
     int expArg = 0;
@@ -384,7 +412,7 @@ void Method::generateOptimalShadingsPos(float slope, float absStep, float expMin
 
 
 void Method::generateOptimalShadingsNeg(float slope, float absStep, float expMin, float expStep, float expMax, string prefix) {
-int expItMax = int(fabs(expMax - expMin) / expStep) - 1;
+	int expItMax = int(fabs(expMax - expMin) / expStep) - 1;
     int expArg = expItMax - 1;
     int absIterations = int(2.0 / absStep);
     string logFilename (prefix);

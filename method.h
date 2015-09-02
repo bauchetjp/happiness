@@ -44,7 +44,7 @@ protected:
 	void _save (string filename, Mat m);
 
 private:
-	void updateParameters(Mat & frame, vector<float> & stats);
+	void updateParameters(Mat & frame, vector<double> & stats);
 
 	void computeSaturationAngle(Mat & shadingMap, Mat & normalMap, float & saturationAngle, bool verbose, float threshold = 0.8);
 
@@ -62,9 +62,9 @@ private:
 
 	float tab[6];
 
-	vector<float> stats_shading_s;
-	vector<float> stats_shading_t;
-	vector<float> stats_shading_n;
+	vector<double> stats_shading_s;
+	vector<double> stats_shading_t;
+	vector<double> stats_shading_n;
 	float angle_saturation_s;
 	float angle_saturation_n;
 };
